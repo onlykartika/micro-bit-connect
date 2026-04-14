@@ -12,15 +12,15 @@ export const useSerial = (onData: (data: string) => void): UseSerialReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState("");
   const [log, setLog] = useState<string[]>([]);
-  const portRef = useRef<SerialPort | null>(null);
-  const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
+  const portRef = useRef<any>(null);
+  const readerRef = useRef<any>(null);
 
   const addLog = (msg: string) => {
     setLog((prev) => [...prev.slice(-49), `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };
 
   const readLoop = useCallback(
-    async (port: SerialPort) => {
+    async (port: any) => {
       const decoder = new TextDecoderStream();
       const readable = port.readable;
       if (!readable) return;
@@ -60,8 +60,13 @@ export const useSerial = (onData: (data: string) => void): UseSerialReturn => {
 
   const connect = useCallback(async () => {
     try {
-      const port = await navigator.serial.requestPort({
-        filters: [{ usbVendorId: 0x0d28 }], // micro:bit vendor ID
+      const nav = navigator as any;
+      if (!nav.serial) {
+        addLog("Web Serial API not supported in this browser");
+        return;
+      }
+      const port = await nav.serial.requestPort({
+        filters: [{ usbVendorId: 0x0d28 }],
       });
       await port.open({ baudRate: 115200 });
       portRef.current = port;
